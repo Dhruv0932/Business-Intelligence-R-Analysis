@@ -1,5 +1,5 @@
 ---
-title: "Assignment-INFO-424"
+title: "Business Intelligence EDA"
 author: "Dhruv Sharma"
 date: "2025-03-24"
 output: pdf_document
