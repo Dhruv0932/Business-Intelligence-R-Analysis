@@ -1,0 +1,602 @@
+---
+title: "Assignment-INFO-424"
+author: "Dhruv Sharma"
+date: "2025-03-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Read the csv file with sp500 data and convert to a time series object
+
+
+
+```{r}
+library(xts)
+library(quantmod)
+sp500 <- as.xts(read.zoo("sp500.tab",header=TRUE))
+```
+#Candlechart for 3 months.
+```{r }
+chartSeries(last(sp500,"3 months"), theme='white')
+```
+#CandleChart for 1 month
+```{r}
+chartSeries(last(sp500, "1 month"), theme='white')
+```
+#The upper part of the plot shows a candlestick chart representing the daily price movements of the S&P 500 index from September 1 to September 15, 2009. Each candlestick displays one day of trading. The rectangular body shows the opening and closing prices, while the thin lines (wicks) above and below the candle show the day’s highest and lowest prices. Green candles indicate that the price closed higher than it opened (a gain), and orange candles show a loss for the day. From the chart, we can see that the index had a sharp drop on September 1st, with a long orange candle showing both a large drop and high trading activity. After that, the index steadily increased, shown by a series of green candles from September 3rd to 10th. The price peaked on September 15th, with the last recorded value around 1052.63, which appears to be the highest closing price in the period shown. The lowest price in this timeframe occurred on September 1st, where the wick extends below 990, suggesting the market dipped significantly that day before beginning a recovery. Overall, the candles reveal a clear upward trend after the initial drop, with price movements becoming more stable as the index climbed.
+
+
+```{r}
+sp500$Av <- (sp500$Close + sp500$High + sp500$Low) / 3
+plot(index(sp500), sp500$Av, type="l", col="black",
+     xlab="Date", ylab="Average Price", main="Daily Average Price of SP500")
+```
+#The line plot shows the daily average price of the S&P 500 index from January 1970 through September 2009. From 1970 until the mid‑1980s, the average price remained below 200 and rose slowly. Starting in the early 1990s, the price climbed more rapidly and reached a peak of around 1,500 by the year 2000. After that peak, there was a steep decline down to about 800 over the next two years. The index then recovered to a similar high of around 1,500 by late 2007, followed by another sharp drop below 700 in early 2009. By September 2009, the average price had rebounded to roughly 1,000. Overall, the plot shows a strong long‑term upward trend interrupted by two pronounced periods of decline.
+
+
+```{r}
+# 1. Manually calculate daily returns and subset last 12 months
+sp500$Return <- (sp500$Close - lag(sp500$Close, 1)) / lag(sp500$Close, 1)
+sp500_last12 <- last(sp500, "12 months")
+
+# 2. Candlestick chart for prices
+chartSeries(sp500_last12, theme = "white", name = "SP500 Last 12 Months")
+
+# 3. Plot daily returns with custom axes
+plot.zoo(sp500_last12$Return,
+         main = "Daily Returns (Last 12 Months)",
+         ylab = "Daily Return", xlab = "Date",
+         type = "h", xaxt = "n", yaxt = "n")
+abline(h = 0, col = "red", lwd = 2)
+
+# 4. Add monthly x-axis and clean y-axis
+months_seq <- seq(start(sp500_last12), end(sp500_last12), by = "month")
+axis(1, at = months_seq, labels = format(months_seq, "%b %Y"), las = 2, cex.axis = 0.8)
+axis(2, at = pretty(range(sp500_last12$Return, na.rm = TRUE), n = 6), las = 1, cex.axis = 0.8)
+```
+#The candlestick chart shows the movement of the S&P 500 index over the 12-month period from October 2008 to mid-September 2009. Each candlestick represents a single day of trading, displaying the open, close, high, and low prices. From the chart, it’s clear that the market experienced two distinct phases during this time. In the first half — from October 2008 to around March 2009, the index followed a downward trend. The candles are mostly orange (indicating price declines), with several long wicks, suggesting both falling prices and high volatility. This reflects a period of market instability and strong selling pressure, as prices dropped from above 1000 to a low below 700.
+#Starting in March 2009, the second phase begins with a gradual and sustained recovery in prices. This upward trend continues for the rest of the period, with most candlesticks showing gains. The bodies of the candles become more consistently green, and the size of the candles becomes smaller on average, suggesting more stable price movements. By September 2009, the index climbs back above 1052.63. This clear change in trend from a sharp decline to a steady recovery visually reflects a shift in market sentiment over the 12-month span.
+
+#Daily Returns Plot
+
+#The daily returns plot complements the candlestick chart by showing how much the closing price changed from one day to the next, expressed as a percentage. These returns are plotted as vertical lines above or below a horizontal red line representing zero. The zero-line separates days with positive returns (above) from negative returns (below). During the period from October 2008 to March 2009, the plot shows frequent large spikes in both directions, reflecting high volatility and uncertainty in the market. There were many days of sharp losses, along with occasional strong rebounds, which aligns with the downward trend and instability seen in the candlestick chart.
+#After March 2009, the daily return values start to cluster more closely around the zero line, and the spikes become shorter and more consistent. This suggests that the market became more stable during the recovery phase. Most of the returns are slightly positive, supporting the steady upward trend seen in the candlestick chart. Overall, while the candlestick chart reveals the direction of price movements, the daily returns plot highlights the magnitude and consistency of those movements. Together, they provide a full picture of both market trends and volatility over the 12-month period.
+
+
+#question 2
+
+#part 1
+```{r}
+# Load the dataset
+network_df <- read.csv("network.csv")
+
+# View the structure
+str(network_df)
+
+# Confirm the number of nodes
+nrow(network_df)
+
+# View the first few rows
+head(network_df)
+
+```
+#part 2
+
+```{r}
+library(ggplot2)
+library(gridExtra) 
+# Load the data
+
+network_data <- read.csv("network.csv")
+colnames(network_df) <- c("nodeid", "k")
+
+# Histogram of degree (k)
+hist_plot <- ggplot(network_data, aes(x = k)) +
+  geom_histogram(bins = 50, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Histogram of Node Degrees", x = "Degree (k)", y = "Frequency") +
+  theme_minimal()
+
+sorted_degrees <- data.frame(index = 1:length(network_data$k), 
+                             degree = sort(network_data$k, decreasing = TRUE))
+
+# Line plot of sorted degree
+
+line_plot <- ggplot(sorted_degrees, aes(x = index, y = degree)) +
+  geom_line(color = "red", linewidth = 1) +
+  labs(title = "Sorted Node Degrees", x = "Node Index (Sorted)", y = "Degree (k)") +
+  theme_minimal()
+
+grid.arrange(hist_plot, line_plot, ncol = 2, nrow = 1)
+
+```
+#The dataset contains a total of 1000 nodes, and the histogram on the left shows how these nodes are distributed by degree. It reveals that the majority of nodes have low degree values. For example, over 400 out of 1000 nodes have degrees between 1 and 5, making this the most common range. As the degree increases, the frequency drops sharply — very few nodes have degrees above 100, and only a handful exceed 150, indicating that highly connected nodes are rare.
+
+#The sorted degree plot on the right confirms this pattern. The node with the highest degree exceeds 180, but the curve drops rapidly. By around node index 200, the degree has already fallen below 20, and it continues to taper off. This sharp drop followed by a long flat tail shows that only a small percentage of nodes act as highly connected hubs, while the vast majority have far fewer connections. Together, these plots suggest a heavily skewed degree distribution, typical of many real-world networks where a few nodes dominate the structure. This kind of distribution often hints at a scale-free or hub-based network structure.
+
+
+#part 3
+
+```{r}
+# Load dataset
+network_df <- read.csv("network.csv")
+colnames(network_df) <- c("nodeid", "k")
+
+# Calculate frequency table of degrees
+degree_table <- table(network_df$k)
+
+# Convert to probability: P(k) = frequency / total nodes
+pk_df <- as.data.frame(degree_table)
+colnames(pk_df) <- c("k", "freq")
+pk_df$k <- as.numeric(as.character(pk_df$k))
+pk_df$P_k <- pk_df$freq / sum(pk_df$freq)
+
+# Base R plot - log-log scale
+plot(pk_df$k, pk_df$P_k,
+     log = "xy",                    
+     xlab = "Degree (k)",
+     ylab = "P(k)",
+     main = "Log-Log Plot of P(k) vs k",
+     col = "blue",
+     pch = 19)
+```
+#The log‑log plot of P(k) versus degree k shows how the probability of observing a node with a given number of connections decreases as that number grows—and it does so in a very regular way once both axes are on a logarithmic scale. On the horizontal axis (Degree k), values range from about 5 up to roughly 200. On the vertical axis (P(k)), probabilities fall from around 0.12 down to near 0.001. Each point represents the fraction of all 1,000 nodes that have exactly that degree. 
+
+#Because both axes are log‑scaled, a straight‑line pattern indicates a power‑law relationship between degree and probability. In this plot, the points form an approximately straight line sloping downward from left to right, which means that small‑degree nodes are very common while large‑degree nodes become exponentially rarer.There is also a visible clustering of points in the low-degree region (between 5 and 20), reinforcing that many nodes have few connections For example, degrees below 10 occur with probabilities above 0.05 (5%), whereas degrees above 100 occur with probabilities below 0.002 (0.2%).  
+
+#The smooth, roughly linear decline on log‑log axes—combined with a long tail extending to the highest degrees—strongly suggests a scale‑free (power‑law) degree distribution. In practical terms, it tells us that this network is dominated by a few highly connected “hub” nodes, while the vast majority of nodes have relatively few connections.
+
+#part4
+
+#The log‑log plot of P(k) vs degree k shows a clear, downward‑sloping trend that is approximately linear, particularly across the middle range of degrees. This pattern indicates that the probability of a node having degree k decreases steadily as k increases. A straight‑line relationship on logarithmic axes is the hallmark of a power‑law distribution — in other words, P(k) falls off proportionally to k raised to a negative exponent. This behavior is the defining characteristic of a **scale‑free network**, where a small number of nodes (“hubs”) have very high connectivity while the vast majority of nodes have only a few connections. The smooth, long‑tailed distribution visible in the plot therefore implies that the network’s structure is neither random nor uniform but follows a scale‑free topology.
+
+
+
+#Question 3
+
+#part 1
+```{r}
+dist.table <- function(d, response.var = ncol(d))  
+{
+  d <- scale(d) # scale data
+	d.dist <- dist(d[,-response.var])  # distance all X values	
+	d.resp <- dist(d[,response.var])
+	
+	d.dist <- (d.dist-min(d.dist))/(max(d.dist)-min(d.dist))
+	d.resp <- (d.resp-min(d.resp))/(max(d.resp)-min(d.resp))
+	
+	data.frame(cbind(d.dist,d.resp))
+}
+```
+```{r}
+plot.dist.table <- function(d)
+{
+  plot(x=d$d.dist, y = d$d.resp,xlab="Normalised Distance in Feature Space",
+       ylab="Normalised Distance in Response Space",cex=0.5)
+  abline(h=0.5,lty=2,lwd=2,col=2)
+  abline(v=0.5,lty=2,lwd=2,col=2)
+  text(x=0.2,y=0.8,"A",cex=2,col=2)
+  text(x=0.85,y=0.4,"D",cex=2,col=2)
+  text(x=0.2,y=0.4,"C",cex=2,col=2)
+  text(x=0.85,y=0.8,"B",cex=2,col=2)  
+}
+```
+
+```{r}
+# Start by making some data
+X1 <- runif(100)
+X2 <- runif(100)
+Y <- (X1 + X2)
+#
+ex1 <- data.frame(cbind(X1,X2,Y))  # Make a table with 3 columns.  The response
+                                   # (dependent) variable is column 3. 
+##################################
+#
+# Now construct the distance table
+d <- dist.table(ex1, response.var = 3)
+
+# and plot it!
+plot.dist.table(d)
+```
+#This plot compares every possible pair of observations by showing their normalized distance in feature space (x-axis) versus normalized distance in response space (y-axis). The four labelled regions mean:
+#Region A (top-left) — pairs with similar features but very different responses, indicating noise or unpredictability.
+#Region B (top-right) — pairs that differ in both features and responses, which is typical and does not pose a concern.
+#Region C (bottom-left) — pairs similar in both features and responses, showing that similar inputs produce similar outputs, which is desirable for modeling.
+#Region D (bottom-right) — pairs with different features but similar responses, suggesting that the features may not fully explain the outcome.
+
+#In this plot, most points fall into Regions C and B, forming a clear triangular shape along the diagonal. Regions A and D are sparse, meaning that similar inputs rarely give very different outputs, and different inputs rarely give the same output. This strong, consistent relationship between feature distance and response distance indicates low noise and good predictive structure, making the dataset well suited for distance-based modeling methods like k-nearest neighbors.
+
+#part 2
+```{r}
+# Random data for explanatory variables
+set.seed(123)  # For reproducibility
+X1 <- runif(100)
+X2 <- runif(100)
+# Random response variable (not related to X1 or X2)
+Y <- rnorm(100)
+# Combine into a data frame
+ex2 <- data.frame(cbind(X1, X2, Y))
+# Compute distance table
+d2 <- dist.table(ex2, response.var = 3)
+# Plot the distance relationship
+plot.dist.table(d2)
+```
+#This scatterplot shows every pair of observations in a dataset where the response was generated completely at random (so there is no true relationship between inputs and output). The x-axis measures how different two observations are in feature space, and the y-axis measures how different they are in response space. The dashed lines divide the plot into four regions:
+
+#Region A (top-left): Pairs with very similar features but very different responses — here densely populated, indicating high noise because very similar inputs produce substantially different outputs.
+
+#Region B (top-right): Pairs that differ in both features and responses — common and expected but offering no predictive insight.
+
+#Region C (bottom-left): Pairs similar in both features and responses — present only by chance, not because features predict response.
+
+#Region D (bottom-right): Pairs with very different features but similar responses — also common, showing that different inputs can lead to the same output even though there is no true relationship.
+
+#Because points are spread fairly evenly across all four quadrants instead of forming the triangular pattern seen when features predict responses, this plot confirms there is no consistent link between inputs and output. The high density in Regions A and D especially highlights that knowing how close two observations are in feature space gives you almost no information about how close they will be in response space, demonstrating that the dataset has low modeling potential.
+
+#part 3
+```{r}
+# Load required libraries
+library(MASS)
+library(ggplot2)
+library(gridExtra)
+
+# Step 1: Load Data
+
+# Boston housing dataset
+data(Boston)
+d_boston <- dist.table(Boston, response.var = which(names(Boston) == "medv"))
+
+# Bioavailability dataset 
+bio <- read.table("bioavailability.txt")
+d_bio <- dist.table(bio, response.var = ncol(bio))
+
+# Step 2: Define ggplot2 version of plot.dist.table with quadrants
+
+plot.dist.gg <- function(d, title = "") {
+  ggplot(d, aes(x = d.dist, y = d.resp)) +
+    geom_point(alpha = 0.6) +
+    geom_vline(xintercept = 0.5, linetype = "dashed", color = "blue") +
+    geom_hline(yintercept = 0.5, linetype = "dashed", color = "blue") +
+    annotate("text", x = 0.2, y = 0.8, label = "A", size = 5, color = "darkred") +
+    annotate("text", x = 0.85, y = 0.8, label = "B", size = 5, color = "darkred") +
+    annotate("text", x = 0.2, y = 0.2, label = "C", size = 5, color = "darkred") +
+    annotate("text", x = 0.85, y = 0.2, label = "D", size = 5, color = "darkred") +
+    labs(
+      title = title,
+      x = "Normalised Distance in Feature Space",
+      y = "Normalised Distance in Response Space"
+    ) +
+    theme_minimal()
+}
+
+# Step 3: Plot and combine both plots ----
+
+p1 <- plot.dist.gg(d_boston, title = "Boston Housing Dataset")
+p2 <- plot.dist.gg(d_bio, title = "Bioavailability Dataset")
+
+# Display side-by-side
+grid.arrange(p1, p2, ncol = 2)
+
+```
+#This figure shows distance scatterplots for two datasets: Boston Housing (left) and Bioavailability (right). In each plot, every point represents a pair of observations, with the x-axis showing normalized distance in feature space and the y-axis showing normalized distance in response space. The plots are divided into four regions based on whether pairs are similar or different in inputs and outputs.
+
+#Boston Housing Dataset (left)
+#This plot forms a triangular structure, with a large number of points concentrated in Region C (low feature distance, low response distance) and Region B (high in both). Regions A and D are relatively sparse. This pattern indicates that pairs with similar features tend to have similar responses, and those with different features tend to have different responses. This consistency suggests a strong relationship between predictors and output, making the dataset well suited for modeling. The clear structure is especially compatible with k-nearest neighbor models, which rely on the assumption that nearby points in feature space should have similar responses.
+
+#Bioavailability Dataset (right)
+#In contrast, the Bioavailability plot shows a more vertically uniform band, with points densely spread along the y-axis regardless of x-position. This indicates that even when observations are close in feature space, their responses can differ greatly. Regions A and D contain more points compared to the Boston plot, especially Region A — where similar features lead to very different responses. This suggests a weaker or noisier relationship between features and the outcome, making this dataset more difficult to model, particularly for distance-based methods like k-nearest neighbors.
+
+#The dist.table() visualisation directly supports evaluating the key assumptions of k-nearest neighbor models: that similar feature vectors should correspond to similar responses. In the Boston Housing plot, most points fall into Regions B and C, suggesting that input similarity leads to output similarity ideal for k-NN. In contrast, the Bioavailability dataset has many points in Region A, where inputs are similar but responses differ violating this assumption. Therefore, dist.table() is useful for visually diagnosing whether a dataset is suitable for distance-based models like k-nearest neighbors.
+
+#Question4
+#part 1
+```{r}
+# Load the data
+countrystats <- read.csv("countrystats.csv")
+
+# Preview the data
+head(countrystats)
+str(countrystats)
+
+```
+#Variable Descriptions 
+
+#PopDensity:This is the population density, measured as the number of people living per square kilometer in a given country. It gives a sense of how densely populated the country is.
+
+#IncomeperCapita:This represents the average income per person, measured in U.S. dollars. It reflects the general level of economic wealth or earning potential in the country.
+
+#PurchasingParity: This is the purchasing power parity (PPP) index, which adjusts income figures to account for the relative cost of living and inflation rates. It allows comparisons of economic productivity and standards of living between countries.
+
+#ChangeGDP:This is the percentage change in gross domestic product (GDP) from 2010 to 2011. It measures economic growth or contraction over that one-year period.
+
+#Part2
+
+```{r}
+# Load necessary libraries
+library(tibble)
+library(corrplot)
+library(gclus)
+library(Rtsne)
+library(ggplot2)
+library(ggrepel)
+
+# Step 1: Load and clean the data
+countrystatsDF <- read.csv("countrystats.csv", header = TRUE)
+countrystatsDF <- column_to_rownames(countrystatsDF, "Country")
+scaled_data <- scale(countrystatsDF)
+
+# Correlation matrix plot
+cor_matrix <- cor(countrystatsDF, use = "complete.obs")
+corrplot(cor_matrix,
+         method = "color",
+         type = "full",
+         addCoef.col = "black",
+         tl.col = "black",
+         tl.srt = 45,
+         number.cex = 0.8,
+         col = colorRampPalette(c("red", "white", "blue"))(200),
+         cl.cex = 0.75,
+         mar = c(0, 0, 2, 0),
+         title = "Correlation Between Economic Features")
+
+# Pairwise scatterplots with color-coded correlation
+country.cor <- abs(cor(countrystatsDF))
+country.colors <- dmat.color(country.cor)
+country.order <- order.single(cor(countrystatsDF))
+cpairs(countrystatsDF,
+       country.order,
+       panel.colors = country.colors,
+       gap = 0.5,
+       main = "Pairwise Scatterplots Ordered by Correlation")
+
+# Between-Country Relationships: PCA Biplot (ASCII only)
+pca_res <- prcomp(scaled_data)
+pca_df  <- data.frame(
+  PC1     = pca_res$x[,1],
+  PC2     = pca_res$x[,2],
+  Country = rownames(scaled_data)
+)
+
+ggplot(pca_df, aes(x = PC1, y = PC2)) +
+  geom_point(color = "grey50", size = 1.5) +
+  geom_text_repel(aes(label = Country), size = 2.5, max.overlaps = Inf) +
+  labs(
+    title = "Between-Country Relationships: PCA Biplot",
+    x     = paste0("PC1 (", round(summary(pca_res)$importance[2,1] * 100, 1), "% variance)"),
+    y     = paste0("PC2 (", round(summary(pca_res)$importance[2,2] * 100, 1), "% variance)")
+  ) +
+  theme_minimal()
+
+```
+#The visualisations collectively show that the four economic indicators in the countrystats dataset vary largely independently across countries, but still reveal meaningful differences when viewed together in multivariate space. The correlation heatmap confirms that almost all pairwise correlations are near zero (the strongest being only +0.22 between income per capita and purchasing power parity), indicating very weak linear relationships. The scatterplot matrix reinforces this: points cluster densely near the origin with no obvious straight‑line trends, aside from a handful of outliers at very high income or PPP values.
+#The PCA biplot then projects all four variables into two dimensions that capture about 58% of total variance (33% on PC1, 25% on PC2). PC1 separates high‑income, high‑PPP countries (e.g., USA, Norway, New Zealand) on the right from low‑income nations on the left, while PC2 distinguishes countries with stronger GDP growth (e.g., Singapore, Hong Kong) higher up from those with weaker growth below. Most countries cluster near the origin, reflecting average values on all measures. Together, these plots show that although no single variable predicts another, there is clear multivariate structure: wealthy, high‑PPP nations stand apart from poorer countries, and growth rates add a secondary axis of variation.
+
+```{r}
+
+#Similarity to New Zealand
+
+
+#Compute pairwise Euclidean distances on scaled data
+dist_matrix <- dist(scaled_data, method = "euclidean")
+dist_mat    <- as.matrix(dist_matrix)
+
+#Sort distances from New Zealand (exclude itself)
+similar_to_nz <- sort(dist_mat["NewZealand", ], decreasing = FALSE)[2:6]
+
+cat("5 countries most similar to New Zealand:\n")
+print(similar_to_nz)
+
+#Strength/Weakness via PCA (PC1)
+
+pca_res   <- prcomp(scaled_data)
+pc1_scores <- pca_res$x[, 1]
+
+# Top‑5 strongest (highest PC1) and bottom‑5 weakest (lowest PC1)
+strongest <- sort(pc1_scores, decreasing = TRUE)[1:5]
+weakest   <- sort(pc1_scores, decreasing = FALSE)[1:5]
+
+cat("\nTop 5 strongest countries (highest PC1):\n")
+print(strongest)
+
+cat("\nTop 5 weakest countries (lowest PC1):\n")
+print(weakest)
+
+# Visualization of Similarity + Strength
+
+
+# Build a data.frame of PC1 & PC2 scores
+pca_df <- as.data.frame(pca_res$x[, 1:2])
+colnames(pca_df) <- c("PC1","PC2")
+pca_df$Country <- rownames(pca_df)
+pca_df$Group <- ifelse(pca_df$Country == "New Zealand", "New Zealand",
+                       ifelse(pca_df$Country %in% names(similar_to_nz), "Similar", "Other"))
+
+# PCA scatterplot
+ggplot(pca_df, aes(x = PC1, y = PC2, label = Country)) +
+  geom_point(aes(color = Group), size = 3) +
+  geom_text_repel(data = subset(pca_df, Group != "Other")) +
+  labs(title = "PCA: New Zealand and Its 5 Nearest Neighbours",
+       x = "Principal Component 1",
+       y = "Principal Component 2") +
+  theme_minimal()
+
+# Bar‑chart of strongest vs weakest (PC1)
+strength_df <- data.frame(
+  Country = c(names(strongest), names(weakest)),
+  PC1      = c(as.numeric(strongest), as.numeric(weakest)),
+  Category = factor(c(rep("Strongest", 5), rep("Weakest", 5)))
+)
+
+# Order countries by PC1 for plotting
+strength_df$Country <- factor(strength_df$Country, 
+                              levels = strength_df$Country[order(strength_df$PC1)])
+
+ggplot(strength_df, aes(x = Country, y = PC1, fill = Category)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Top‑5 Strongest and Bottom‑5 Weakest Countries by PC1 Score",
+       x = NULL,
+       y = "PC1 Score") +
+  theme_minimal()
+
+
+```
+#The five nearest neighbours to NewZealand (based on Euclidean distance in the four‑variable PCA space) are Cyprus, Brunei, Bahamas, Slovenia, and Iceland. These countries cluster tightly around NewZealand in the PCA biplot because they share very similar values for all four features (population density, income per capita, purchasing power parity, and GDP growth).
+
+#We define “strongest” and “weakest” by each country’s score on Principal Component 1 (PC1), which captures overall economic development (dominated by income per capita and purchasing parity). The strongest countries (highest PC1 scores) are USA, Singapore, Hong Kong, Norway, and Japan, reflecting very high incomes, purchasing power, and moderate growth. The weakest (lowest PC1 scores) are Mongolia, Ghana, Turkmenistan, Liberia, and Timor‑Leste, indicating low income, low purchasing power, and minimal or negative growth.
+
+#PC1 effectively serves as an “economic strength” axis because it loads heavily on income and PPP. High PC1 values mean a country is wealthier and economically stronger; low values indicate poorer economic conditions. By comparing countries along PC1, we can rank them from strongest to weakest and identify their economic profiles.
+
+#part 3 
+
+```{r}
+# Load the data
+data <- read.csv("countrystats.csv")
+rownames(data) <- data$Country
+data$Country <- NULL
+
+# Scale the data
+scaled_data <- scale(data)
+
+# Compute distance matrix
+dist_matrix <- dist(scaled_data)
+
+# Hierarchical clustering
+hc_avg <- hclust(dist_matrix, method = "average")
+hc_complete <- hclust(dist_matrix, method = "complete")
+
+# Plot dendrograms one after the other
+
+plot(hc_avg,
+     main = "Average Linkage Dendrogram",
+     xlab = "", sub = "",
+     cex = 0.4,     # Shrink text
+     hang = -1,     # Align labels at bottom
+     las = 2)       # Rotate labels vertically
+
+# Complete Linkage
+plot(hc_complete,
+     main = "Complete Linkage Dendrogram",
+     xlab = "", sub = "",
+     cex = 0.4,
+     hang = -1,
+     las = 2)
+
+# Cut complete dendrogram into 50 clusters
+clusters <- cutree(hc_complete, k = 50)
+
+# Find countries in same cluster as NewZealand
+nz_cluster <- clusters["NewZealand"]
+same_cluster <- names(clusters[clusters == nz_cluster])
+
+# Print countries in the same cluster
+print(same_cluster)
+
+```
+#After scaling the data so that each variable has a mean of zero and standard deviation of one, two hierarchical clustering dendrograms were generated using different linkage methods: average and complete.
+#The average linkage dendrogram calculates the distance between clusters based on the average pairwise distance between all members. This tends to produce more balanced clusters and smoother merges. The resulting tree is often more compact and merges groups more gradually.
+#The complete linkage dendrogram calculates the maximum distance between any two members across clusters when considering merges. This method tends to delay cluster merging unless all elements are fairly close, which leads to tighter, more compact clusters and often taller trees with more vertical spread.
+#In the plots, the complete linkage dendrogram has higher overall “height” values, with more visibly isolated tall branches at the top, compared to the more evenly merged structure of the average linkage version.
+#Using the complete linkage dendrogram, we cut the tree into 50 clusters using cutree(). New Zealand was found in the same cluster as the following countries:
+
+#Brunei, Cyprus, Iceland, Ireland, New Zealand
+#This indicates that based on their scaled socio-economic indicators, these countries form a distinct cluster, likely due to similarities in income per capita, GDP growth, purchasing power parity, or population density.
+
+
+#part 4
+
+```{r}
+# Install & load packages
+if (!requireNamespace("Rtsne", quietly=TRUE)) install.packages("Rtsne")
+library(Rtsne); library(ggplot2); library(ggrepel)
+
+# Read + scale
+countrystatsDF <- read.csv("countrystats.csv", header=TRUE)
+rownames(countrystatsDF) <- countrystatsDF$Country
+countrystatsDF$Country <- NULL
+scaled_data <- scale(countrystatsDF)
+
+# Run t‑SNE
+set.seed(42)
+tsne_result <- Rtsne(scaled_data, dims=2, perplexity=30)
+
+# Build data.frame
+tsne_df <- data.frame(
+  Dim1 = tsne_result$Y[,1],
+  Dim2 = tsne_result$Y[,2],
+  Country = rownames(scaled_data),
+  row.names = rownames(scaled_data)
+)
+
+# Distance matrix in t‑SNE space
+dist_tsne <- as.matrix(dist(tsne_df[,1:2]))
+
+# 5 nearest neighbours to NewZealand
+nearest_5 <- names(sort(dist_tsne["NewZealand", ], decreasing=FALSE)[2:6])
+cat("5 nearest neighbours to NewZealand:\n"); print(nearest_5)
+
+# Plot
+tsne_df$Group <- ifelse(tsne_df$Country=="NewZealand","NewZealand",
+                        ifelse(tsne_df$Country %in% nearest_5,"Nearest","Other"))
+
+ggplot(tsne_df, aes(Dim1, Dim2, color=Group)) +
+  geom_point(size=3) +
+  geom_text_repel(data=subset(tsne_df, Group!="Other"), aes(label=Country), max.overlaps=Inf) +
+  labs(title="t‑SNE 2D Projection: NewZealand & Its 5 Nearest Neighbours") +
+  theme_minimal()
+
+```
+
+```{r}
+#Compare t‑SNE neighbours vs Step 3 complete‑linkage cluster
+
+#Print the two lists side‑by‑side
+cat("Five nearest neighbours (t‑SNE):\n"); print(nearest_5)
+cat("\nCountries in same cluster as NewZealand (Step 3 complete linkage):\n"); print(same_cluster)
+
+# Venn‑style overlap
+intersect(nearest_5, same_cluster)
+setdiff(nearest_5, same_cluster)
+setdiff(same_cluster, nearest_5)
+
+```
+#1.Comparing Two Methods of “Similarity to New Zealand”
+
+#t‑SNE nearest neighbors (nearest_5) lists the five countries closest to New Zealand in the t‑SNE projection. Since t‑SNE preserves local structure in a low-dimensional space, these countries are visually near New Zealand on the t‑SNE plot.
+#Complete-linkage cluster membership (same_cluster) shows the countries grouped with New Zealand after cutting the hierarchical dendrogram (from step 3) into 50 clusters. This method uses full feature-space distances and tends to form compact, globally distinct clusters.
+
+#2.Set Comparison of Country Memberships
+#The code uses basic set operations to compare the two groupings:
+#intersect(nearest_5, same_cluster) gives countries found in both methods — those identified as similar to New Zealand by both t‑SNE and clustering.
+#setdiff(nearest_5, same_cluster) returns countries that are t‑SNE neighbors only — visually close but not in the same cluster.
+#setdiff(same_cluster, nearest_5) lists countries that are clustered with New Zealand but not among its top five t‑SNE neighbors.
+
+#3.Why They May Differ
+
+#t‑SNE and hierarchical clustering define “similarity” differently. t‑SNE focuses on preserving local structure in 2D, while complete linkage uses global structure and maximum distances in full-dimensional space. As a result, the two methods can yield overlapping but not identical groups. This highlights how different dimensionality reduction or clustering techniques may emphasize different aspects of similarity in the same dataset.
+
+
+```{r}
+library(pheatmap)
+
+pheatmap(
+  dist_tsne,
+  main            = "t‑SNE Distance Matrix (2D Euclidean Distances)",
+  show_rownames   = TRUE,
+  show_colnames   = TRUE,
+  fontsize        = 6,        
+  fontsize_row    = 5,        
+  fontsize_col    = 5,        
+  angle_col       = 45,       
+  clustering_distance_rows = "euclidean",
+  clustering_distance_cols = "euclidean",
+  clustering_method        = "complete",
+  border_color    = NA       
+)
+
+```
+
+
+#This heatmap shows pairwise Euclidean distances between countries in the 2D t-SNE space. Dark blue areas indicate countries that are very similar, while red areas represent large differences. The dendrogram reveals clusters of closely related countries, such as the group around New Zealand and its nearest neighbors. Overall, the plot confirms how t-SNE preserves local structure and visually highlights economic similarity between countries based on their reduced-dimensional profiles.
